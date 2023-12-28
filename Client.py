@@ -1,29 +1,28 @@
 import socket
 import threading
 
-def receive_messages():
+def receive_messages(client_socket):
     while True:
-        try:
-            message = client_socket.recv(1024).decode("utf-8")
-            print(message)
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
-            client_socket.close()
+        data = client_socket.recv(1024).decode()
+        if not data:
             break
+        
+        print(data)
 
-def send_messages():
+def start_client(host, port):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host, port))
+    print("Connected to the server.")
+
+    thread = threading.Thread(target=receive_messages, args=(client_socket,))
+    thread.start()
+
     while True:
         message = input()
-        client_socket.send(message.encode("utf-8"))
+        client_socket.sendall(message.encode())
 
-HOST = '127.0.0.1'
-PORT = 12345
+    client_socket.close()
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((HOST, PORT))
-
-receive_thread = threading.Thread(target=receive_messages)
-receive_thread.start()
-
-send_thread = threading.Thread(target=send_messages)
-send_thread.start()
+host = "127.0.0.1"
+port = 12345
+start_client(host, port)
