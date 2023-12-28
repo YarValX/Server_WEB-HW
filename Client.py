@@ -1,38 +1,29 @@
 import socket
 import threading
 
-# Choosing Nickname
-nickname = input("Choose your nickname: ")
-
-# Connecting To Server
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('ENTER YOUR IP SERVER ADDRESS', 55555))
-
-# Listening to Server and Sending Nickname
-def receive():
+def receive_messages():
     while True:
         try:
-            # Receive Message From Server
-            # If 'NICK' Send Nickname
-            message = client.recv(1024).decode('ascii')
-            if message == 'NICK':
-                client.send(nickname.encode('ascii'))
-            else:
-                print(message)
-        except:
-            # Close Connection When Error
-            print("An error occured!")
-            client.close()
+            message = client_socket.recv(1024).decode("utf-8")
+            print(message)
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            client_socket.close()
             break
 
-def write():
+def send_messages():
     while True:
-        message = '{}: {}'.format(nickname, input(''))
-        client.send(message.encode('ascii'))
+        message = input()
+        client_socket.send(message.encode("utf-8"))
 
-# Starting Threads For Listening And Writing
-receive_thread = threading.Thread(target=receive)
+HOST = '127.0.0.1'
+PORT = 12345
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((HOST, PORT))
+
+receive_thread = threading.Thread(target=receive_messages)
 receive_thread.start()
 
-write_thread = threading.Thread(target=write)
-write_thread.start()
+send_thread = threading.Thread(target=send_messages)
+send_thread.start()
