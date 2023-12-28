@@ -1,18 +1,20 @@
 import socket
-import threading
 
-def receive_messages(client_socket):
-    while True:
-        message = client_socket.recv(1024).decode()
-        print(message)
+def send_request():
+    # Создание сокета
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-def send_messages(client_socket):
-    while True:
-        message = input()
-        client_socket.send(message.encode())
+    # Подключение к серверу
+    server_address = ('localhost', 5000)
+    client_socket.connect(server_address)
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('localhost', 1234))
+    # Отправка запроса серверу
+    request = 'Привет, сервер!'
+    client_socket.sendall(request.encode())
 
-threading.Thread(target=receive_messages, args=(client_socket,)).start()
-threading.Thread(target=send_messages, args=(client_socket,)).start()
+    # Получение ответа от сервера
+    response = client_socket.recv(1024).decode()
+    print('Получен ответ от сервера:', response)
+
+    # Закрытие соединения
+    client_socket.close()

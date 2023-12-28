@@ -1,28 +1,29 @@
 import socket
-import threading
 
-def handle_client(client_socket, client_address):
+def start_server():
+    # Создание сокета
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind сокета на локальный адрес и порт
+    server_address = ('localhost', 5000)
+    server_socket.bind(server_address)
+
+    # Включение режима прослушивания на входящие соединения
+    server_socket.listen(1)
+
+    print('Сервер запущен. Ожидание клиента...')
+
     while True:
+        # Принятие входящего соединения
+        client_socket, client_address = server_socket.accept()
+
+        # Обработка данных от клиента
         data = client_socket.recv(1024).decode()
-        if "quit" in data:
-            break
-        broadcast(data)
-    client_socket.close()
+        print('Получен запрос от клиента:', data)
 
-def broadcast(message):
-    for client_socket in clients:
-        client_socket.send(message.encode())
+        # Отправка ответа клиенту
+        response = 'Привет, клиент!'
+        client_socket.sendall(response.encode())
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('localhost', 1234))
-server_socket.listen(5)
-
-clients = []
-
-print("Сервер запущен.")
-
-while True:
-    client_socket, client_address = server_socket.accept()
-    clients.append(client_socket)
-    print(f"Подключился клиент {client_address[0]}:{client_address[1]}")
-    threading.Thread(target=handle_client, args=(client_socket, client_address)).start()
+        # Закрытие соединения
+        client_socket.close()
