@@ -1,26 +1,38 @@
 import socket
+import threading
 
-def send_request():
-    # Создание сокета
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Choosing Nickname
+nickname = input("Choose your nickname: ")
 
-    # Подключение к серверу
-    server_address = ('localhost', 5000)
-    client_socket.connect(server_address)
+# Connecting To Server
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(('ENTER YOUR IP SERVER ADDRESS', 55555))
 
-    # Цикл обмена сообщениями
+# Listening to Server and Sending Nickname
+def receive():
     while True:
-        # Отправка запроса серверу
-        request = input('Введите сообщение: ')
-        client_socket.sendall(request.encode())
-
-        # Получение ответа от сервера
-        response = client_socket.recv(1024).decode()
-        print('Получен ответ от сервера:', response)
-
-        # Если пользователь ввел "exit", то выход из цикла и закрытие соединения
-        if request == 'exit':
+        try:
+            # Receive Message From Server
+            # If 'NICK' Send Nickname
+            message = client.recv(1024).decode('ascii')
+            if message == 'NICK':
+                client.send(nickname.encode('ascii'))
+            else:
+                print(message)
+        except:
+            # Close Connection When Error
+            print("An error occured!")
+            client.close()
             break
 
-    # Закрытие соединения
-    client_socket.close()
+def write():
+    while True:
+        message = '{}: {}'.format(nickname, input(''))
+        client.send(message.encode('ascii'))
+
+# Starting Threads For Listening And Writing
+receive_thread = threading.Thread(target=receive)
+receive_thread.start()
+
+write_thread = threading.Thread(target=write)
+write_thread.start()

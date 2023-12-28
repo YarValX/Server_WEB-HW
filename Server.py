@@ -1,45 +1,63 @@
+#!/bin/python3
 import socket
 import threading
 
-def start_server():
-    # Создание сокета
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Connection Data
+host = 'ENTER YOUR IP'
+port = 55555
 
-    # Bind сокета на локальный адрес и порт
-    server_address = ('localhost', 5000)
-    server_socket.bind(server_address)
+# Starting Server
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((host, port))
+server.listen()
 
-    # Включение режима прослушивания на входящие соединения
-    server_socket.listen(1)
+# Lists For Clients and Their Nicknames
+clients = []
+nicknames = []
 
-    print('Сервер запущен. Ожидание клиента...')
+# Sending Messages To All Connected Clients
+def broadcast(message):
+    for client in clients:
+        client.send(message)
 
-    # Список подключенных клиентов
-    clients = []
-
-    def handle_client(client_socket, client_address):
-        while True:
-            try:
-                # Обработка данных от клиента
-                data = client_socket.recv(1024).decode()
-                print(f'Получен запрос от клиента {client_address}: {data}')
-
-                # Отправка запроса всем остальным клиентам
-                for client in clients:
-                    if client != client_socket:
-                        client.sendall(data.encode())
-
-            except ConnectionResetError:
-                print(f'Клиент {client_address} отключился')
-                clients.remove(client_socket)
-                client_socket.close()
-                break
-
+# Handling Messages From Clients
+def handle(client):
     while True:
-        # Принятие входящего соединения
-        client_socket, client_address = server_socket.accept()
-        clients.append(client_socket)
-        print(f'Клиент подключился: {client_address}')
+        try:
+            # Broadcasting Messages
+            message = client.recv(1024)
+            broadcast(message)
+        except:
+            # Removing And Closing Clients
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            nickname = nicknames[index]
+            broadcast('{} left!'.format(nickname).encode('ascii'))
+            nicknames.remove(nickname)
+            break
 
-        # Создание и запуск отдельного потока для обработки клиента
-        threading.Thread(target=handle_client, args=(client_socket, client_address)).start()
+# Receiving / Listening Function
+def receive():
+    while True:
+        # Accept Connection
+        client, address = server.accept()
+        print("Connected with {}".format(str(address)))
+
+        # Request And Store Nickname
+        client.send('NICK'.encode('ascii'))
+        nickname = client.recv(1024).decode('ascii')
+        nicknames.append(nickname)
+        clients.append(client)
+
+        # Print And Broadcast Nickname
+        print("Nickname is {}".format(nickname))
+        broadcast("{} joined!".format(nickname).encode('ascii'))
+        client.send('Connected to server!'.encode('ascii'))
+
+        # Start Handling Thread For Client
+        thread = threading.Thread(target=handle, args=(client,))
+        thread.start()
+
+print("Server if listening...")
+receive()
