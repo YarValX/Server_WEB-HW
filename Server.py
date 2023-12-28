@@ -1,4 +1,5 @@
 import socket
+import threading
 
 def start_server():
     # Создание сокета
@@ -13,17 +14,32 @@ def start_server():
 
     print('Сервер запущен. Ожидание клиента...')
 
+    # Список подключенных клиентов
+    clients = []
+
+    def handle_client(client_socket, client_address):
+        while True:
+            try:
+                # Обработка данных от клиента
+                data = client_socket.recv(1024).decode()
+                print(f'Получен запрос от клиента {client_address}: {data}')
+
+                # Отправка запроса всем остальным клиентам
+                for client in clients:
+                    if client != client_socket:
+                        client.sendall(data.encode())
+
+            except ConnectionResetError:
+                print(f'Клиент {client_address} отключился')
+                clients.remove(client_socket)
+                client_socket.close()
+                break
+
     while True:
         # Принятие входящего соединения
         client_socket, client_address = server_socket.accept()
+        clients.append(client_socket)
+        print(f'Клиент подключился: {client_address}')
 
-        # Обработка данных от клиента
-        data = client_socket.recv(1024).decode()
-        print('Получен запрос от клиента:', data)
-
-        # Отправка ответа клиенту
-        response = 'Привет, клиент!'
-        client_socket.sendall(response.encode())
-
-        # Закрытие соединения
-        client_socket.close()
+        # Создание и запуск отдельного потока для обработки клиента
+        threading.Thread(target=handle_client, args=(client_socket, client_address)).start()
